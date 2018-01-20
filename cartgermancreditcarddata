@@ -1,0 +1,45 @@
+data<-read.csv("C:\\Users\\bonnieb\\Documents\\Custom Office Templates\\Default_On_Payment.csv")
+###EDA
+dim(data)
+str(data)
+head(data)
+table(data$Default_On_Payment)
+round(prop.table(table(data$Default_On_Payment))*100,2)
+pie(table(data$Default_On_Payment))
+summary(data)
+boxplot(data$Duration_in_Months,data$Age,data$Num_CC)
+hist(data$Age)
+hist(data$Duration_in_Months)
+plot(data$Num_CC,data$Age)
+
+###Feature selection
+library(Information)
+library(riv)
+library(devtools)
+library(woe)
+library(gridExtra)
+
+stat<-create_infotables(data=data,y="Default_On_Payment")
+grid.table(stat$Summary,rows=NULL)
+write.csv(stat$Summary,"IV_summary.csv",row.names=F)
+
+##New data set with top three variables based the IV
+newdata<-subset(data,select=c(Status_Checking_Acc,Credit_History,Duration_in_Months,Default_On_Payment))
+
+library(caret)
+
+set.seed(1234)
+newdata1<-createDataPartition(newdata$Default_On_Payment,times=1,p=0.70,list = F)
+traindata<-newdata[newdata1,]
+testdata<-newdata[-newdata1,]
+round(prop.table(table(traindata$Default_On_Payment))*100,2)
+round(prop.table(table(testdata$Default_On_Payment))*100,2)
+
+library(rpart)
+library(rpart.plot)
+
+treedata <- rpart(Default_On_Payment ~ ., data = traindata,method = "class")
+prp(treedata,type=2,extra = 2,under = TRUE)
+pred.treedata <- predict(treedata, testdata,type = "class")
+confusionMatrix(pred.treedata,testdata$Default_On_Payment)
+summary(treedata)
